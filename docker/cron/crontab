@@ -1,0 +1,37 @@
+# Symfony scheduled commands
+# Формат: minute hour day month weekday command
+#
+# Логи пишутся в stdout supervisord через cron-exec враппер.
+# cron-exec решает проблему Alpine busybox crond: ash не умеет >> /dev/stdout (pipe).
+#
+# ┌─ минута    (0-59)
+# │ ┌─ час      (0-23)
+# │ │ ┌─ день   (1-31)
+# │ │ │ ┌─ месяц (1-12)
+# │ │ │ │ ┌─ день недели (0-6, 0=вс)
+# │ │ │ │ │
+
+# Восстановление очередей ask_ai (если воркер не обработал сразу)
+* * * * * cron-exec php /var/www/html/app/bin/console app:dispatch-ai-requests
+* * * * * cron-exec php /var/www/html/app/bin/console app:dispatch-ai-replies
+
+# Диспатч задач суммаризации: каждые 3 минуты проверяем несуммаризованные сообщения
+*/3 * * * * cron-exec php /var/www/html/app/bin/console app:dispatch-summary-jobs
+
+# Проверка count-based агрегации: каждые 3 минуты со сдвигом 2 мин (запускается в :02, :05, :08 ...)
+2-59/3 * * * * cron-exec php /var/www/html/app/bin/console app:check-aggregation-group
+
+# Публикация count-based агрегаций в группы: каждую минуту
+* * * * * cron-exec php /var/www/html/app/bin/console app:publish-group-contexts
+
+# Доставка тех же агрегатов в ЛС подписчикам (фаза 1: строки «к отправке», фаза 2: очередь)
+* * * * * cron-exec php /var/www/html/app/bin/console app:dispatch-aggregated-dm-jobs
+
+# Суточный контекст: каждую ночь в 23:50
+50 23 * * * cron-exec php /var/www/html/app/bin/console app:generate-daily-aggregation-group
+
+# Сбор суточной статистики: каждый день в 00:05 (данные за вчера)
+5 0 * * * cron-exec php /var/www/html/app/bin/console app:collect-daily-stats
+
+# Реактивация ЛС с ИИ: раз в сутки в 12:00 UTC (пороги AI_REENGAGE_* в .env)
+0 12 * * * cron-exec php /var/www/html/app/bin/console app:send-ai-private-reengage

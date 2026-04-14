@@ -1,0 +1,10 @@
+﻿# Docker credentials вЂ” РЅРµ РІ git, СЃРѕРґРµСЂР¶РёС‚ РїР°СЂРѕР»Рё MariaDB
+/.env
+
+# Cursor IDE
+.cursorignore
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db

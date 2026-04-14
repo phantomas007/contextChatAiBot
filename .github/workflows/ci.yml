@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: PHP CS Fixer + PHPStan
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11.3
+        env:
+          MARIADB_DATABASE: blog_ci
+          MARIADB_USER: ci_user
+          MARIADB_PASSWORD: ci_password
+          MARIADB_ROOT_PASSWORD: ci_root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uci_user -pci_password"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, intl, mbstring, zip, gd
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: app/vendor
+          key: composer-v2-${{ hashFiles('app/composer.lock') }}
+          restore-keys: composer-v2-
+
+      - name: Create .env.local
+        working-directory: app
+        run: |
+          echo 'DATABASE_URL="mysql://ci_user:ci_password@127.0.0.1:3306/blog_ci?serverVersion=11.3.2-MariaDB&charset=utf8mb4"' > .env.local
+
+      - name: Install dependencies
+        working-directory: app
+        run: composer install --no-interaction --prefer-dist --no-scripts
+
+      - name: Warmup DI container (required by PHPStan)
+        working-directory: app
+        env:
+          APP_ENV: dev
+          APP_DEBUG: "1"
+          DATABASE_URL: "mysql://ci_user:ci_password@127.0.0.1:3306/blog_ci?serverVersion=11.3.2-MariaDB&charset=utf8mb4"
+          DEFAULT_URI: "http://localhost"
+        run: php bin/console cache:warmup 2>&1
+
+      - name: PHP CS Fixer (dry-run)
+        working-directory: app
+        run: vendor/bin/php-cs-fixer fix src --dry-run --diff --ansi
+
+      - name: PHPStan (level 6)
+        working-directory: app
+        run: vendor/bin/phpstan analyse --ansi --memory-limit=256M

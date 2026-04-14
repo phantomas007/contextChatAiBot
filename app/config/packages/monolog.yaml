@@ -1,0 +1,14 @@
+monolog:
+    channels: ['app']
+    handlers:
+        # Временно: логи никуда не пишутся (null handler).
+        # Включить запись в файл — заменить блок main на закомментированный main_file ниже.  
+        main:
+            type: 'null'
+
+        # main_file:
+        #     type: rotating_file
+        #     path: '%kernel.logs_dir%/app.log'
+        #     level: info
+        #     max_files: 14
+        #     # переименовать в main и удалить type: null выше

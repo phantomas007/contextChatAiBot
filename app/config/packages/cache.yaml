@@ -1,0 +1,17 @@
+framework:
+    cache:
+        pools:
+            cache.message_save_groups:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_URL)%'
+                default_lifetime: 86400  # 24 ч — group_id, user_id, user_group; мягкое обновление без thundering herd
+
+            cache.context_fold:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_URL)%'
+                default_lifetime: 172800  # 2 сут — полный текст свёрнутого саммари (ЛС и группы)
+
+            cache.ai_reply_fold:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_URL)%'
+                default_lifetime: 10800  # 3 ч — полный текст свёрнутого ответа ИИ

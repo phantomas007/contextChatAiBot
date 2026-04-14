@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+# See also https://symfony.com/doc/current/service_container/import.html
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    use_local_ollama_default: 'true'
+    env(APP_STATS_TIMEZONE): 'Asia/Vladivostok'
+    env(DEEPSEEK_API_KEY): ''
+    env(DEEPSEEK_API_BASE_URL): 'https://api.deepseek.com/v1'
+    env(DEEPSEEK_MODEL): 'deepseek-chat'
+    env(AI_REENGAGE_INACTIVE_DAYS): '5'
+    env(AI_REENGAGE_COOLDOWN_DAYS): '7'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+
+    App\MessageHandler\MessageSaveHandler:
+        arguments:
+            $groupCache: '@cache.message_save_groups'
+
+    App\Telegram\ContextSummaryFoldCache:
+        arguments:
+            $foldPool: '@cache.context_fold'
+
+    App\Telegram\AiReplyFoldCache:
+        arguments:
+            $foldPool: '@cache.ai_reply_fold'
+
+    Predis\Client:
+        class: Predis\Client
+        arguments:
+            - '%env(REDIS_URL)%'
+
+    App\Service\AiRequestRateLimiter:
+        arguments:
+            $redis: '@Predis\Client'
+
+    App\Telegram\AskAiPrivateModeStore:
+        arguments:
+            $redis: '@Predis\Client'
+
+    App\Telegram\AskAiGroupPendingStore:
+        arguments:
+            $redis: '@Predis\Client'
+
+    App\Command\SendAiPrivateReengageCommand:
+        arguments:
+            $inactiveDays: '%env(int:AI_REENGAGE_INACTIVE_DAYS)%'
+            $cooldownDays: '%env(int:AI_REENGAGE_COOLDOWN_DAYS)%'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones

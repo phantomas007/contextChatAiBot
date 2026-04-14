@@ -1,0 +1,29 @@
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name ${NGINX_SERVER_NAME};
+
+    ssl_certificate     /etc/nginx/ssl/nginx.crt;
+    ssl_certificate_key /etc/nginx/ssl/nginx.key;
+
+    root /var/www/html/app/public;
+    index index.php index.html;
+
+    access_log off;
+    error_log /dev/null crit;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass php:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg)$ {
+        expires 7d;
+    }
+}

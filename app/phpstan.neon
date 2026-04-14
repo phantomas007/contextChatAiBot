@@ -1,0 +1,21 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-symfony/rules.neon
+
+parameters:
+    level: 6
+
+    paths:
+        - src
+
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+
+    ignoreErrors:
+        # Doctrine assigns $id via reflection — PHPStan cannot see this
+        -
+            identifier: property.unusedType
+            path: src/Entity
