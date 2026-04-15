@@ -1,6 +1,8 @@
 # Contextbot
 
 AI-бот для Telegram: слушает групповые чаты, генерирует саммари через Ollama и публикует дайджесты в группу сам бот @ContextChatAiBot
+группа поддержки t.me/phantomaspopuas 
+
 
 ## Как это работает
 
